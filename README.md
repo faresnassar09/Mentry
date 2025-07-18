@@ -31,17 +31,8 @@
 - HTML/CSS/JS - Frontend
 - LocalStorage / SessionStorage – For saving timer state
 - Optional: MySQL / SQLite for data persistence
-
----
-
-## 📸 Screenshots
-
-> (You can add your own screenshots of the dashboard, timer, or book list here)
-
 ---
 
 ## 🚀 Getting Started
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/your-username/mentry.git
+1. Clone the repository:  git clone https://github.com/faresnassar09/Mentry.git
