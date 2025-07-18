@@ -1,6 +1,3 @@
-<p align="center">
-  <img src="https://laravel.com/img/logotype.min.svg" width="300" alt="Laravel Logo">
-</p>
 
 <h1 align="center">📘 Mentry - Personal Learning Dashboard</h1>
 
