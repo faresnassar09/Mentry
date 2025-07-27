@@ -5,6 +5,7 @@
     <title>@yield('title', 'موقعي')</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="https://cdn.tailwindcss.com"></script>
+
 </head>
 
 <body class=" min-h-screen flex flex-col">
@@ -22,18 +23,19 @@
 </div>
 
     <div class="flex flex-1">
-    {{-- Sidebar --}}
 
         @include('users.layouts.sidebar')
 
     <main class="flex-1 p-6">
+
         @yield('content')
     </main>
 </div>
 
-   
-   
      
 
 </body>
 </html>
+
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+<script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>

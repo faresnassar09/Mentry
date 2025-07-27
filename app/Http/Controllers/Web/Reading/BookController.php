@@ -20,8 +20,6 @@ public function index(){
     $title = 'الكتب';
     $books = Book::with('category')->paginate(9);
 
-
-
 return view('users.reading.books.index',compact('title','books'));
 
 }
@@ -38,10 +36,7 @@ $title = 'عرض الكتاب';
     return back()->with('failed', 'حدث مشكلة اثناء عرض الملف ');
   }
 
-
-  $fileUrl = Storage::url($book->book_path);
-
-  return view('users.reading.books.view', compact('title','book', 'fileUrl'));
+  return view('users.reading.books.view', compact('title','book'));
 }
 
 public function download(Book $book)

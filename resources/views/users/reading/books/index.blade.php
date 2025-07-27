@@ -15,7 +15,7 @@
             <div class="bg-white rounded-xl shadow-md overflow-hidden flex flex-col h-full transform transition-transform duration-200 hover:scale-105">
 
                 <div class="h-30 overflow-hidden">
-                    <img src="{{ Storage::url($book->cover_path) }}"
+                    <img src="{{ Storage::url($book->cover_path)}}"
                          alt="{{ $book->title }}"
                          class="w-full h-50 object-cover">
                 </div>

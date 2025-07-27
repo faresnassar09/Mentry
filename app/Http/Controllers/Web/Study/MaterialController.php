@@ -90,7 +90,7 @@ class MaterialController extends Controller
                 return back()->with('failed','حدث خطاء اثناء تحميل الملف'); 
           }
 
-          return $this->fileServices->download($material->path,$material->title);
+          return $this->fileServices->download($material->path,$material->title.'.pdf');
 
 
     }
