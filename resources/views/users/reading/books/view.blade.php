@@ -44,7 +44,7 @@
 
         <div class="w-full h-[100vh] border rounded overflow-hidden shadow-lg">
         <iframe 
-  src="{{ asset('pdfjs/web/viewer.html') }}?file={{ urlencode(asset('storage/' . $book->book_path)) }}" 
+  src="{{ asset('pdfjs/web/viewer.html') }}?file={{ urlencode(asset('storage/'.$book->book_path)) }}" 
   width="100%" 
   height="700px" 
   style="border: none;">
