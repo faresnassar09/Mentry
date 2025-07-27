@@ -1,0 +1,43 @@
+<?php
+
+namespace App\Http\Requests\Writing;
+
+use Illuminate\Foundation\Http\FormRequest;
+
+class BookRequest extends FormRequest
+{
+    /**
+     * Determine if the user is authorized to make this request.
+     */
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    /**
+     * Get the validation rules that apply to the request.
+     *    
+     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     */
+    public function rules(): array
+    {
+        return [
+
+            'title' => ['required','min:5','max:40'],
+            'content' => ['required','min:5'],
+ 
+        ];
+    }
+
+    public function messages()
+    {
+        return [
+
+            'title.required' => 'يجب ادخال عنوان',
+            'title.min' => 'يجب ان يكزن العنوان علي الاقل min: حرف',
+            'title.max' => 'يجب ان لا يتخطي العنوان max: حرف',
+            'content.required' => 'ادخل محتوي',
+            'content.min' => 'الحد الادني للمحتوي min: حرف' ,
+        ];
+    }
+}

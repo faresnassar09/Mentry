@@ -1,8 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\writing\BookController;
-use FontLib\Table\Type\name;
+use App\Http\Controllers\Web\writing\BookController;
 
 Route::controller(BookController::class)
 ->middleware('auth')
@@ -22,7 +21,7 @@ Route::delete('delete/{book}','delete')->name('delete');
 
 });         
 
-Route::prefix('users/writing/')->name('users.writing.')->group(function(){
+Route::middleware('auth')->prefix('users/writing/')->name('users.writing.')->group(function(){
 
 
     

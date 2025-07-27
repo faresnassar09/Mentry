@@ -42,6 +42,13 @@ public function uploadFile($folder,$file){
 
 public function download($path,$name){
 
+
+    if(!$this->checkFileExists($path)){
+
+        throw new \Exception("File not found.");
+
+    }
+
     return Storage::download($path,$name);
 
 }
@@ -81,50 +88,34 @@ public function getFileContent($path){
 
 }
 
-public function updateExistFileContent($path,$content,$id){
+public function updateExistFileContent($path,$content){
 
-      
-     try {
-        
+      if (!$this->checkFileExists($path)) {
 
-         
-        Log::channel('user')->info('user book content updated successfully',[
 
-            'user_id' => Auth::id(),
-            'book_id' => $id,
-        ]);
-Storage::put($path,$content);
-
-        return true;
-    
-     } catch (\Exception $e) {
-  
-        Log::channel('user')->error('error occurred while updating user book content',[
-
-            'user_id' => Auth::id(),
-            'book_id' => $id,
-            'exception_details' => $e->getMessage(),
-        ]);
-
-        return false;
+return false;
 
     }
 
+Storage::put($path,$content);
+
+return true;
 
 } 
 
 public function generatePdfFile($path, $title)
 {
-    $file = Storage::get($path);
 
-    $mpdf = new \Mpdf\Mpdf([
+
+    $file = Storage::get($path);
+    $mpdf = new Mpdf([
         'mode' => 'utf-8',
         'format' => 'A4',
         'default_font' => 'cairo'
     ]);
 
-    $mpdf->WriteHTML($file, \Mpdf\HTMLParserMode::HTML_BODY);
-
+    $mpdf->WriteHTML($file, \Mpdf\HTMLParserMode::HTML_BODY); 
+      
     return response()->streamDownload(function () use ($mpdf) {
         echo $mpdf->Output('', 'S');
     }, $title.'.pdf', [

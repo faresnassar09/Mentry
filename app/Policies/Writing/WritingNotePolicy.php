@@ -3,8 +3,8 @@
 namespace App\Policies\Writing;
 
 use App\Models\User;
+use App\Models\Writing\WritingBook;
 use App\Models\Writing\WritingNote;
-use Illuminate\Auth\Access\Response;
 
 class WritingNotePolicy
 {
@@ -21,23 +21,22 @@ class WritingNotePolicy
      */
     public function view(User $user, WritingNote $writingNote): bool
     {
-        return false;
+        return $user->id === $writingNote->user_id;
     }
 
     /**
      * Determine whether the user can create models.
      */
-    public function create(User $user): bool
+    public function store(User $user,WritingBook $writingBook): bool
     {
-        return false;
-    }
+return true;    }
 
     /**
      * Determine whether the user can update the model.
      */
     public function update(User $user, WritingNote $writingNote): bool
     {
-        return false;
+        return  $user->id === $writingNote->user_id;
     }
 
     /**

@@ -1,9 +1,10 @@
 <?php
 
-use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
 
+
+// Route::get('test',[\App\Http\Controllers\Algoritms::class,'get']);
 
 
 Route::post('/start-timer', function (Illuminate\Http\Request $request) {
@@ -18,5 +19,4 @@ Route::post('/start-timer', function (Illuminate\Http\Request $request) {
 
 Route::get('/', function () {
     return view('welcome');
-});
-
+})->middleware('guest');
