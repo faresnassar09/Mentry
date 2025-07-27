@@ -1,10 +1,10 @@
 <?php 
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Study\BookController;
-use App\Http\Controllers\Study\MaterialController;
-use App\Http\Controllers\Study\ScheduleController;
-use App\Http\Controllers\Study\NoteController;
+use App\Http\Controllers\Web\Study\BookController;
+use App\Http\Controllers\Web\Study\MaterialController;
+use App\Http\Controllers\Web\Study\ScheduleController;
+use App\Http\Controllers\Web\Study\NoteController;
 
  
 

@@ -1,4 +1,3 @@
-@vite('resources/css/app.css')
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -17,7 +16,8 @@
                 <span class="text-xl font-bold text-gray-800">Mentry</span>
             </a>
         </div>
-
+@if (!auth()->check())
+    
         <div class="flex space-x-4 rtl:space-x-reverse pt-1"> {{-- ✅ رفع أزرار الدخول والتسجيل --}}
             <a href="{{ route('login') }}"
                class="text-gray-700 hover:text-blue-600 font-medium transition duration-200">
@@ -28,6 +28,17 @@
                 إنشاء حساب
             </a>
         </div>
+         
+        @else 
+        <div class="flex space-x-4 rtl:space-x-reverse pt-1"> {{-- ✅ رفع أزرار الدخول والتسجيل --}}
+            <a href="{{ route('login') }}"
+               class="text-gray-700 hover:text-blue-600 font-medium transition duration-200">
+                العودة الي الصفحة الرئيسية
+            </a>
+        </div>
+
+        @endif
+
     </div>
 </nav>
 

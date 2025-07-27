@@ -21,7 +21,7 @@ class WritingSnippetPolicy
      */
     public function view(User $user, WritingSnippet $writingSnippet): bool
     {
-        return false;
+        return $user->id === $writingSnippet->user_id;
     }
 
     /**
@@ -37,7 +37,7 @@ class WritingSnippetPolicy
      */
     public function update(User $user, WritingSnippet $writingSnippet): bool
     {
-        return false;
+        return $user->id === $writingSnippet->user_id;
     }
 
     /**

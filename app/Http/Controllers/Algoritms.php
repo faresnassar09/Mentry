@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\Auth;
+
 class Algoritms extends Controller
 {
+
 
 
 public function index(){  
@@ -23,8 +26,6 @@ public function index(){
 
     $steps = 0;
     $high = count($nums) - 1;
-
-    //when target greater than mid  high will never change
 
     $low = 0;  
 

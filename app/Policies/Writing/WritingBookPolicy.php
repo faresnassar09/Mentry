@@ -21,7 +21,7 @@ class WritingBookPolicy
      */
     public function view(User $user, WritingBook $writingBook): bool
     {
-        return false;
+        return $user->id === $writingBook->user_id;
     }
 
     /**
