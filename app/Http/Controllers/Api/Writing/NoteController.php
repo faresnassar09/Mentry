@@ -8,6 +8,9 @@ use App\Http\Requests\Writing\NoteUpdateRequest;
 use App\Http\Resources\Writing\NoteResource;
 use App\Models\Writing\WritingBook;
 use App\Models\Writing\WritingNote;
+use App\Service\Api\Logging\LoggingService;
+use App\Service\Api\ResponseHandelerService;
+use App\Service\Api\Writing\NoteService as UserNoteService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
@@ -15,139 +18,131 @@ use Illuminate\Support\Facades\Log;
 
 class NoteController extends Controller
 {
+    public $objectName = 'User note';
+
+    public function __construct(
+
+        public UserNoteService $userNoteService,
+        public ResponseHandelerService $responseHandelerService,
+        public LoggingService $loggingService,
+
+    ) {}
 
     public function index()
     {
 
-        $notes = Auth::user()->userNotes()->with('writingBook')->get();
+        $notes =  $this->userNoteService->getUserNotes();
 
-        return response()->json([
+        return $this->responseHandelerService->successResponse(
 
-            'success' => true,
-            'message' => 'notes retrieved successfully',
-            'data' => NoteResource::collection($notes),
-        ], 200);
+            "{$this->objectName}s retrieved successfully",
+            NoteResource::collection($notes),
+            200
+        );
     }
-
 
     public function store(NoteRequest $request)
     {
 
 
-        if(!WritingBook::find($request->book_id)){
-            return response()->json([
-                'success' => false,
-                'message' => 'unauthorized action',
-                'data' => [],
-            ],403);
-        }
+        if (!Auth::user()->userBooks()->find($request->book_id)) {
 
+            return $this->responseHandelerService->failedResponse(
+
+                'unauthorized action',
+                [],
+                403
+            );
+        }
 
         try {
 
-            $note = Auth::user()->userNotes()->create([
+            $note = $this->userNoteService->createUserNote(
 
-                'writing_book_id' => $request->book_id,
-                'content' => $request->content,
-            ]);
+                $request->book_id,
+                $request->content
 
-            Log::channel('userapi')->info('user note created successfully', [
+            );
 
-                'user_id' => $note->user_id,
+            $this->loggingService->successLogger($this->objectName, 'created', [
+
                 'note_id' => $note->id,
             ]);
 
+            return $this->responseHandelerService->successResponse(
 
-            return response()->json([
+                "{$this->objectName} created successfully",
+                new NoteResource($note),
+                201
+            );
 
-                'success' => true,
-                'message' => 'user note created successfully',
-                'data' => new NoteResource($note),
-            ], 200);
         } catch (\Exception $e) {
 
 
-            Log::channel('userapi')->info('error occurred while saving user note ', [
+            $this->loggingService->failedLogger($this->objectName, 'creating', [
 
-                'user_id' => Auth::id(),
-                'exception_details' => $e->getMessage(),
+                'exception_details'  => $e->getMessage(),
             ]);
 
-            return response()->json([
+            return $this->responseHandelerService->failedResponse(
 
-                'success' => false,
-                'message' => 'error occurred while saving user note',
-                'data' => [],
-            ], 500);
+                "Error occurred while saving {$this->objectName}",
+                [],
+                500
+            );
         }
     }
-
 
     public function show(WritingNote $note)
     {
 
         Gate::authorize('view', $note);
 
+        return $this->responseHandelerService->successResponse(
 
-        return response()->json([
-
-            'success' => true,
-            'message' => 'user note retrieved successfully',
-            'data' => new NoteResource($note),
-        ],200);
+            "{$this->objectName} retrieved successfully",
+            new NoteResource($note),
+            200
+        );
     }
 
-
-    public function update(NoteUpdateRequest $request,WritingNote $note)
+    public function update(NoteUpdateRequest $request, WritingNote $note)
     {
 
-        Gate::authorize('update',$note);
+        Gate::authorize('update', $note);
+
         try {
 
-            $note->fill($request->only(['content']));
+            $this->userNoteService->updateUserNote($note, $request->content);
 
-            if ($note->isDirty('content')) {
+            $this->loggingService->successLogger($this->objectName, 'updated', [
 
-                $note->save();
-            }
-
-
-            Log::channel('userapi')->info('user note updated successfully', [
-
-                'user_id' => $note->user_id,
-                'user_ip' => $request->ip(),
                 'note_id' => $note->id,
-
             ]);
 
-            return response()->json([
+            return $this->responseHandelerService->successResponse(
 
-                'success' => true,
-                'message' => 'user note updated successfully',
-                'data' => new NoteResource($note),
-            ], 200);
+                "{$this->objectName} updated successfully",
+                new NoteResource($note),
+                200
+            );
+
         } catch (\Exception $e) {
 
+            $this->loggingService->failedLogger($this->objectName, 'updating', [
 
-            Log::channel('userapi')->info('error occurred while updating user note', [
-
-                'user_id' => $note->user_id,
-                'user_ip' => $request->ip(),
                 'note_id' => $note->id,
                 'exception_details' => $e->getMessage(),
-
             ]);
 
-            return response()->json([
+            return $this->responseHandelerService->failedResponse(
 
-                'success' => false,
-                'message' => 'error occurred while updating user note',
-                'data' => [],
-            ], 500);
+                "Error occurred while updating {$this->objectName}",
+                [],
+                500
+            );
         }
-
     }
-
 
     public function destroy(WritingNote $note)
     {
@@ -156,36 +151,31 @@ class NoteController extends Controller
 
         try {
 
-               $note->delete();
+            $this->userNoteService->deleteUserNote($note);
+            $this->loggingService->successLogger($this->objectName, 'deleted', [
 
-         Log::channel('userapi')->info('user note deleted successfully', [
-
-                'user_id' => $note->user_id,
+                'note_id' => $note->id
             ]);
 
+            return $this->responseHandelerService->successResponse(
 
-            // sending resource for frontend reference before complete removal from UI
-
-            return response()->json([
-
-                'success' => true,
-                'message' => 'user note deleted successfully',
-                'data' => new NoteResource($note),
-            ], 200);
+                "{$this->objectName} deleted successfully",
+                [],
+                200
+            );
         } catch (\Exception $e) {
 
-            Log::channel('userapi')->error('error occurred while deleting user note', [
+            $this->loggingService->failedLogger($this->objectName, 'deleting', [
 
-                'user_id' => $note->user_id,
                 'exception_details' => $e->getMessage(),
             ]);
 
-            return response()->json([
+            return $this->responseHandelerService->failedResponse(
 
-                'success' => false,
-                'message' => 'error occurred while deleting user note',
-                'data' => [],
-            ],500);
+                "Error occurred while deleting {$this->objectName}",
+                [],
+                500
+            );
         }
     }
 }

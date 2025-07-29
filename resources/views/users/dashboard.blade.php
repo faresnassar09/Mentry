@@ -1,12 +1,12 @@
 @extends('users.layouts.app')
-@section('title','الصفحة الرئيسية')
+@section('title', __('messages.home_page'))
 @section('content')
 
 <!DOCTYPE html>
-<html lang="ar">
+<html lang="{{ app()->getLocale() }}">
 <head>
   <meta charset="UTF-8">
-  <title>Circle Countdown Timer</title>
+  <title>{{ __('messages.circle_countdown_timer') }}</title>
   <style>
     .timer-wrapper {
       display: flex;
@@ -90,9 +90,9 @@
 <audio id="endSound" src="{{Storage::url('end_timer.mp3')}}" preload="auto"></audio>
 
 <div class="inputs">
-  <input type="number" id="hours" placeholder="ساعات" min="0" max="24">
-  <input type="number" id="minutes" placeholder="دقائق" min="0" max="59">
-  <button class="set_time" onclick="startTimer()">ابدا</button>
+  <input type="number" id="hours" placeholder="{{ __('messages.hours_placeholder') }}" min="0" max="24">
+  <input type="number" id="minutes" placeholder="{{ __('messages.minutes_placeholder') }}" min="0" max="59">
+  <button class="set_time" onclick="startTimer()">{{ __('messages.start_button') }}</button>
 </div>
 
 <div class="timer-wrapper">
@@ -104,12 +104,12 @@
     <div class="time-display" id="timeDisplay">00:00</div>
   </div>
 
-  <button class="reset_btn" onclick="resetTimer()">اعادة</button>
+  <button class="reset_btn" onclick="resetTimer()">{{ __('messages.reset_button') }}</button>
 </div>
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
   <a href="{{route('users.study.books.index')}}" class="bg-white rounded-2xl shadow p-4 flex items-center justify-between hover:shadow-lg transition">
     <div>
-      <h3 class="text-gray-500 text-sm">كتب الدراسة</h3>
+      <h3 class="text-gray-500 text-sm">{{__('messages.studyBooks')}}</h3>
       <p class="text-2xl font-bold text-gray-800">{{$data['studyBooksCount']}}</p>
     </div>
     <div class="text-blue-500 text-3xl">📚</div>
@@ -117,25 +117,23 @@
 
   <a href="{{route('users.writing.books.index')}}" class="bg-white rounded-2xl shadow p-4 flex items-center justify-between hover:shadow-lg transition">
     <div>
-      <h3 class="text-gray-500 text-sm">الكتب التي كتبتها</h3>
+      <h3 class="text-gray-500 text-sm">{{ __('messages.written_books') }}</h3>
       <p class="text-2xl font-bold text-gray-800">{{$data['userBooks']}}</p>
     </div>
     <div class="text-green-500 text-3xl">✍️</div>
   </a>
 
-  <!-- ملازمي -->
   <a href="{{route('users.study.materials.index')}}" class="bg-white rounded-2xl shadow p-4 flex items-center justify-between hover:shadow-lg transition">
     <div>
-      <h3 class="text-gray-500 text-sm">ملازمي</h3>
+      <h3 class="text-gray-500 text-sm">{{ __('messages.my_materials') }}</h3>
       <p class="text-2xl font-bold text-gray-800">{{$data['studyMiniBooks']}}</p>
     </div>
     <div class="text-yellow-500 text-3xl">🗂️</div>
   </a>
 
-  <!-- ملخصاتي -->
   <a href="{{route('users.study.materials.index')}}" class="bg-white rounded-2xl shadow p-4 flex items-center justify-between hover:shadow-lg transition">
     <div>
-      <h3 class="text-gray-500 text-sm">ملخصاتي</h3>
+      <h3 class="text-gray-500 text-sm">{{ __('messages.my_summaries') }}</h3>
       <p class="text-2xl font-bold text-gray-800">{{$data['studySummers']}}</p>
     </div>
     <div class="text-pink-500 text-3xl">📝</div>
@@ -143,7 +141,7 @@
 
   <a href="{{route('users.writing.notes.index')}}" class="bg-white rounded-2xl shadow p-4 flex items-center justify-between hover:shadow-lg transition">
     <div>
-      <h3 class="text-gray-500 text-sm">ملاحظاتي</h3>
+      <h3 class="text-gray-500 text-sm">{{ __('messages.my_notes') }}</h3>
       <p class="text-2xl font-bold text-gray-800">{{$data['userNotes']}}</p>
     </div>
     <div class="text-purple-500 text-3xl">🗒️</div>
@@ -151,16 +149,15 @@
 
   <a href="{{route('users.writing.snippets.index')}}" class="bg-white rounded-2xl shadow p-4 flex items-center justify-between hover:shadow-lg transition">
     <div>
-      <h3 class="text-gray-500 text-sm">مقتطفاتي</h3>
+      <h3 class="text-gray-500 text-sm">{{ __('messages.my_snippets') }}</h3>
       <p class="text-2xl font-bold text-gray-800">{{$data['userSnippets']}}</p>
     </div>
     <div class="text-indigo-500 text-3xl">💡</div>
   </a>
 
-  <!-- كتب متوفرة للقراءة -->
   <a href="{{route('reading.books.index')}}" class="bg-white rounded-2xl shadow p-4 flex items-center justify-between hover:shadow-lg transition">
     <div>
-      <h3 class="text-gray-500 text-sm">كتب متوفرة للقراءة</h3>
+      <h3 class="text-gray-500 text-sm">{{ __('messages.available_reading_books') }}</h3>
       <p class="text-2xl font-bold text-gray-800">{{$data['readingBooks']}}</p>
     </div>
     <div class="text-red-500 text-3xl">📖</div>

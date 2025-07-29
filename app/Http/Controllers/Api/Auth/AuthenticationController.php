@@ -7,6 +7,7 @@ use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegistrationRequest;
 use App\Http\Resources\User\ProfileResource;
 use App\Models\User;
+use App\Service\Api\ResponseHandelerService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -15,59 +16,63 @@ use Illuminate\Support\Facades\Log;
 class AuthenticationController extends Controller
 {
 
-    
-    public function register(RegistrationRequest $request){
+    public function __construct(public ResponseHandelerService $responseHandelerService) {}
+
+    public function register(RegistrationRequest $request)
+    {
 
 
-try {
-    
-   $user =  User::create([
+        try {
 
-    'name' => $request->name,
-    'email' => $request->email,
-    'password' => Hash::make($request->password),
+            $user =  User::create([
 
-   ]);
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
 
-   Log::channel('userapi')->info('user created successfully',[
+            ]);
 
-    'user_id' => $user->id,
-    'user_ip' => $request->ip(),
-    'user_agent' => $request->userAgent(),
-   ]);
-  
-   Auth::login($user);
+            Log::channel('userapi')->info('user created successfully', [
 
-    $token = $user->createToken('Api Token')->plainTextToken;
+                'user_id' => $user->id,
+                'user_ip' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+            ]);
 
-   return response()->json([
+            Auth::login($user);
 
-    'success' => true,
-    'message' => 'userAgent',
-    'data' => [],
-    'token' => $token,
-   ]);
-    
-} catch (\Exception $e) {
+            $token = $user->createToken('Api Token')->plainTextToken;
 
+            return $this->responseHandelerService->successResponse(
 
-    Log::channel('userapi')->info('error occurred while creating user',[
+                'User account created successfully',
+                [
+                    'data' => new ProfileResource($user),
 
-        'user_ip' => $request->ip(),
-        'user_agent' => $request->userAgent(),
-        'exception_details' => $e->getMessage(),
-       ]);
+                    'token' => $token,
+
+                ],
+                200
+
+            );
+        } catch (\Exception $e) {
 
 
-       return response()->json([
+            Log::channel('userapi')->info('error occurred while creating user', [
 
-        'success' => false,
-        'message' => 'error occurred while creating user',
-        'data' => [],
-       ],500);
+                'user_ip' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+                'exception_details' => $e->getMessage(),
+            ]);
 
-}
 
+            return $this->responseHandelerService->failedResponse(
+
+                'Unexpected Error occurred while creating user',
+                [],
+                500
+            );
+        }
     }
 
     public function login(LoginRequest $request)
@@ -84,41 +89,39 @@ try {
 
             $token = $user->createToken('API Token')->plainTextToken;
 
-            return response()->json(
-                [
+            return $this->responseHandelerService->successResponse(
 
-                    'success' => true,
-                    'message' => 'login successful',
+                'User loged in successfully',
+                [
                     'data' => new ProfileResource($user),
-                    'token' => $token
+
+                    'token' => $token,
+
                 ],
                 200
+
             );
         } else {
 
 
-            return response()->json(
-                [
+            return $this->responseHandelerService->failedResponse(
 
-                    'success' => false,
-                    'message' => 'invalid credentials'
-                ],
-                401
+                'invalid credentials',
+                [],
+                500
             );
         }
     }
-
     public function logout(Request $request)
     {
 
         if (!Auth::guard('sanctum')->check()) {
 
-            return response()->json(
-                [
-                    'success' => false,
-                    'message' => 'user is not logged in',
-                ],
-                401
+            return $this->responseHandelerService->failedResponse(
+
+                'user is not logged in',
+                [],
+                500
             );
         }
 
@@ -126,14 +129,11 @@ try {
 
         $user->currentAccessToken()->delete();
 
-        return response()->json(
-            [
+        return $this->responseHandelerService->failedResponse(
 
-                'success' => true,
-                'message' => 'logged out successfully',
-
-            ],
-            200 
+            'user logged out successfully',
+            [],
+            200
         );
     }
 }

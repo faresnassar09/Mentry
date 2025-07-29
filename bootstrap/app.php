@@ -40,7 +40,13 @@ return Application::configure(basePath: dirname(__DIR__))
 
             \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
                         
-        ]);    })
+        ]); 
+    
+        $middleware->encryptCookies([
+            'lang',
+        ]);
+    
+    })
     ->withExceptions(function (Exceptions $exceptions): void {
         
         $exceptions->render(function (NotFoundHttpException $e,Request $request) {

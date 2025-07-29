@@ -30,6 +30,7 @@ class MaterialRequest extends FormRequest
             Rule::unique('study_materials')->where(function ($query) {
                 return $query->where('user_id', Auth::id());
             }),],
+            
             'file' => [
                 'required',
                 'max:15360',

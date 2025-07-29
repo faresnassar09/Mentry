@@ -6,54 +6,40 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Study\MaterialRequest;
 use App\Http\Resources\Study\MaterialResource;
 use App\Models\Study\StudyMaterial;
+use App\Service\Api\Logging\LoggingService;
+use App\Service\Api\ResponseHandelerService;
 use App\Service\FileServices;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
+use App\Service\Api\Study\MaterialService as StudyMaterialService;
 
 class MaterialController extends Controller
 {
 
-    public function __construct(public FileServices $fileServices)
-    {
-        
-    }
+    public $objectName = 'Study Material';
+
+    public function __construct(
+
+        public FileServices $fileServices,
+        public ResponseHandelerService $responseHandelerService,
+        public StudyMaterialService $studyMaterialService,
+        public LoggingService $loggingService,
+
+    ) {}
 
     public function index()
     {
 
-    try {
 
-          $materials = Auth::user()->studyMaterials;
+        $materials = $this->studyMaterialService->getUserStudyMaterials();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'books retrieved successfully',
-                'data' => MaterialResource::collection($materials),
-            ]);
- 
+        return $this->responseHandelerService->successResponse(
 
-        } catch (\Exception $e) {
-
-
-            Log::channel('userapi')->error('error occurred while retrieving study materials',[
-
-                'user_id' => Auth::id(),
-                'exception_details' => $e->getMessage(),
-            ]);
-
-            return response()->json([
-                
-                'success' => false,
-                'message' => 'error occurred while retrieving study materials',
-                'data' => [],
-                
-            ]);
-        }
-
-        
-
+            "{$this->objectName} retrieved successfully",
+            MaterialResource::collection($materials),
+            200
+        );
     }
 
     public function store(MaterialRequest $request)
@@ -65,74 +51,62 @@ class MaterialController extends Controller
 
             if (!$path) {
 
-                Log::channel('userapi')->error('An error occurred while saving study material on storage', [
+                $this->loggingService->failedLogger($this->objectName, 'created', []);
 
-                    'user_id' => Auth::id(),
-                ]);
+                return $this->responseHandelerService->failedResponse(
 
-                return response()->json([
-
-                    'success' => false,
-                    'message' => 'An error occurred while saving study material on storage',
-                    'data' => [],
-
-                ], 500);
+                    "Unexpected error occurred while retriveing {$this->objectName} from storage",
+                    [],
+                    500
+                );
             }
 
-            $book = Auth::user()->studyMaterials()->create([
+            $material = $this->studyMaterialService->createStudyMaterial(
 
-                'title' => $request->title,
-                'path' => $path,
-                'type' => $request->type,
+                $request->title,
+                $request->type,
+                $path
+            );
 
+            $this->loggingService->successLogger($this->objectName,'created',[
+
+                'material_id' => $material->id,
             ]);
 
-            Log::channel('userapi')->info('material book created successfully', [
+            return $this->responseHandelerService->successResponse(
 
-                'user_id' => $book->user_id,
-                'book_id' => $book->id,
-            ]);
-
-            return response()->json([
-
-                'success' => true,
-                'message' => 'study material created successfully',
-                'data' => new MaterialResource($book),
-
-            ], 200);
+                "{$this->objectName} created successfully",
+                new MaterialResource($material),
+                200,
+            );
         } catch (\Exception $e) {
 
-            Log::channel('userapi')->error('error occurred while saving study material', [
+            $this->loggingService->successLogger($this->objectName, 'storing', [
 
-                'user_id' => Auth::id(),
                 'exception_details' => $e->getMessage(),
-                'user_ip' => request()?->ip(),
 
             ]);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'error occurred while saving study book'
-            ], 422);
+            return $this->responseHandelerService->failedResponse(
+
+                "Unexpected error occurred while storig {$this->objectName}",
+                [],
+                500
+            );
         }
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(StudyMaterial $material)
     {
 
         Gate::authorize('view', $material);
 
+        return $this->responseHandelerService->successResponse(
 
-        return response()->json([
-
-            'success' => true,
-            'message' => 'retrieved study material successfully',
-            'data' => new MaterialResource($material),
-        ]);
-
+            "{$this->objectName} retrieved successfully",
+            new MaterialResource($material),
+            200
+        );
     }
 
     public function download(StudyMaterial $material)
@@ -144,38 +118,31 @@ class MaterialController extends Controller
 
         try {
 
-            Log::channel('userapi')->info('study material donwloaded successfully', [
+            $this->loggingService->successLogger($this->objectName, 'downloaded', [
 
-                'material_id' => $material->user_id,
-                'material_id' => $material->id,
-                'user_ip' => request()?->ip(),
-
+                'material_id' => $material->id
             ]);
 
             return $this->fileServices->download($material->path, $material->title);
         } catch (\Exception $e) {
 
-            Log::channel('userapi')->error('error occurred while downloading study material', [
+            $this->loggingService->failedLogger($this->objectName, 'downloading', [
 
-                'user_id' => $material->user_id,
                 'material_id' => $material->id,
-                'user_ip' => request()->ip(),
                 'exception_details' => $e->getMessage(),
 
             ]);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'error occurred while donwloading study material',
-                'data' => [],
-            ]);
+            return $this->responseHandelerService->failedResponse(
+
+                "Unexpected error occurred while downloading {$this->objectName}",
+                [],
+                500
+            );
         }
     }
 
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(StudyMaterial $material)
     {
 
@@ -188,52 +155,45 @@ class MaterialController extends Controller
 
             if (!$status) {
 
-                Log::channel('userapi')->error('An error occurred while deleting study material file on storage', [
+                $this->loggingService->failedLogger($this->objectName, 'deleting', []);
 
-                    'user_id' => $material->user_id,
-                ]);
+                return $this->responseHandelerService->failedResponse(
 
-                return response()->json([
-
-                    'success' => false,
-                    'message' => 'error occurred while deleting study material from storage',
-                    'data' => [],
-                ], 500);
+                    "Unexpected error occurred while deleting {$this->objectName}",
+                    [],
+                    500
+                );
             }
 
-            $material->delete();
+            $this->studyMaterialService->deleteStudyMaterial($material);
 
-            Log::channel('userapi')->info('study material deleted successfully', [
+            $this->loggingService->successLogger($this->objectName,'deleted',[
 
-                'user_id' => $material->user_id,
-                'book_title' => $material->title,
-
+                'material_title' => $material->title,
+                
             ]);
 
-            return response()->json([
+            return $this->responseHandelerService->successResponse(
 
-                'success' => true,
-                'message' => 'study material deleted successfully',
-                'data' => [],
-            ], 200);
+                "{$this->objectName} deleted successfully",
+                [],
+                200
+            );
         } catch (\Exception $e) {
 
-            Log::channel('userapi')->info('An error occurred  while deleting study material', [
+            $this->loggingService->failedLogger($this->objectName, 'deleting', [
 
-                'user_id' => $material->user_id,
-                'book_title' => $material->title,
+                'material_title' => $material->title,
                 'exception_details' => $e->getMessage(),
-
             ]);
 
-            return response()->json([
+            return $this->responseHandelerService->failedResponse(
 
-                'success' => false,
-                'message' => 'An error occurred  while deleting study material',
-                'data' => [],
-            ], 500);
+                "Unexpected error occurred while deleting {$this->objectName}",
+
+                [],
+                500
+            );
         }
-
-
     }
 }

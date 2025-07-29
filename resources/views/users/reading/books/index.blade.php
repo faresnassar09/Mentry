@@ -1,5 +1,5 @@
 @extends('users.layouts.app')
-@section('title', $title)
+@section('title', __('messages.library_page_title'))
 
 @section('content')
 
@@ -22,13 +22,12 @@
 
                 <div class="p-4 flex flex-col justify-between flex-grow">
                     <div>
-                        {{-- ✅ العنوان + التصنيف في نفس السطر --}}
                         <div class="flex justify-between items-center mb-2">
                             <h2 class="text-lg font-bold text-gray-800 truncate">
                                 {{ $book->title }}
                             </h2>
                             <span class="text-sm text-gray-500 whitespace-nowrap">
-                                التصنيف: <span class="font-medium text-gray-700">{{ $book->category->name ?? 'غير محدد' }}</span>
+                                {{ __('messages.category_label') }}: <span class="font-medium text-gray-700">{{ $book->category->name ?? __('messages.uncategorized') }}</span>
                             </span>
                         </div>
 
@@ -40,11 +39,11 @@
                     <div class="flex justify-between text-sm mt-4 gap-2 flex-wrap">
                         <a href="{{ route('reading.books.read', $book->id) }}"
                            class="flex-1 text-center bg-blue-500 text-white px-3 py-2 rounded-lg hover:bg-blue-600 transition-colors duration-200 min-w-[70px]">
-                            قراءة
+                            {{ __('messages.read_button') }}
                         </a>
                         <a href="{{ route('reading.books.download', $book->id) }}"
                            class="flex-1 text-center bg-green-500 text-white px-3 py-2 rounded-lg hover:bg-green-600 transition-colors duration-200 min-w-[70px]">
-                            تحميل
+                            {{ __('messages.download_button') }}
                         </a>
                     </div>
 

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\User;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\User\ProfileResource;
 use App\Models\User;
+use App\Service\Api\ResponseHandelerService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -13,17 +14,22 @@ use Illuminate\Support\Facades\Log;
 class ProfileController extends Controller
 {
 
+    public function __construct(public ResponseHandelerService $responseHandelerService,){
+
+
+    }
+
     public function index()
     {
 
         $user = Auth::user();
 
-        return response()->json([
+        return $this->responseHandelerService->successResponse(
 
-            'success' => true,
-            'message' => 'user information retrieved successfully',
-            'data' => new ProfileResource($user),
-        ]);
+            'user information retrieved successfully',
+            new ProfileResource($user),
+            200
+        );
     }
 
     public function update(Request $request, User $user)
@@ -56,12 +62,13 @@ class ProfileController extends Controller
             ]);
 
 
-            return response()->json([
+            return $this->responseHandelerService->successResponse(
 
-                'success' => true,
-                'message' => 'user info changed successfully',
-                'data' => new ProfileResource($user),
-            ], 200);
+                'user info changed successfully',
+                new ProfileResource($user),
+                200
+            );
+
         } catch (\Exception $e) {
 
             Log::channel('userapi')->info('erroe occurred while changing user info', [
@@ -73,12 +80,12 @@ class ProfileController extends Controller
             ]);
         }
 
-        return response()->json([
+        return $this->responseHandelerService->failedResponse(
 
-            'success' => false,
-            'message' => 'erroe occurred while changing user info',
-            'data' => [],
-        ], 500);
+            'Unexpected Erroe occurred while changing user info',
+            [],
+            500
+        );
     }
 
     public function destroy(Request $request, User $user)
@@ -99,12 +106,13 @@ class ProfileController extends Controller
 
             ]);
 
-            return response()->json([
+            return $this->responseHandelerService->failedResponse(
 
-                'success' => true,
-                'message' => 'user deleted successfully',
-                'data' => [],
-            ]);
+                'user deleted successfully',
+                [],
+                200
+            );
+
         } catch (\Exception $e) {
 
 
@@ -116,12 +124,12 @@ class ProfileController extends Controller
 
             ]);
 
-            return response()->json([
+            return $this->responseHandelerService->failedResponse(
 
-                'success' => true,
-                'message' => 'error occurred while deleting user',
-                'data' => [],
-            ]);
+                'Unexpected Error occurred while deleting user',
+                [],
+                500
+            );
         }
     }
 }

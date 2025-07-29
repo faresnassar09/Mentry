@@ -6,71 +6,70 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Writing\SnippetRequest;
 use App\Http\Resources\Writing\SnippetResource;
 use App\Models\Writing\WritingSnippet;
-use Illuminate\Http\Request;
+use App\Service\Api\Logging\LoggingService;
+use App\Service\Api\ResponseHandelerService;
+use App\Service\Api\Writing\SnippetService as UserSnippetService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
 
 class SnippetController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+    public $objectName = 'User snippet';
+
+    public function __construct(
+
+        public UserSnippetService $userSnippetService,
+        public ResponseHandelerService $responseHandelerService,
+        public LoggingService $loggingService,
+
+    ) {}
+
     public function index()
     {
 
-        
-        $snippets = Auth::user()->userSnippets()->get();
+        $snippet =  $this->userSnippetService->getUsersnippets();
 
-        return response()->json([
+        return $this->responseHandelerService->successResponse(
 
-            'success' => true,
-            'message' => 'snippet retrieved successfully',
-            'data' => SnippetResource::collection($snippets),
-        ], 200);
-
+            "{$this->objectName}s retrieved successfully",
+            SnippetResource::collection($snippet),
+            200
+        );
     }
-
 
     public function store(SnippetRequest $request)
     {
         try {
 
-            $snippets = Auth::user()->userSnippets()->create([
+            $snippet = $this->userSnippetService->createUserSnippet($request->content);
 
-                'content' => $request->content,
+            $this->loggingService->successLogger($this->objectName, 'created', [
+
+                'snippet_id' => $snippet->id,
             ]);
 
-            Log::channel('userapi')->info('user snippet created successfully', [
+            return $this->responseHandelerService->successResponse(
 
-                'user_id' => $snippets->user_id,
-                'snippets_id' => $snippets->id,
-            ]);
-
-
-            return response()->json([
-
-                'success' => true,
-                'message' => 'user snippet created successfully',
-                'data' => new SnippetResource($snippets),
-            ], 200);
+                "{$this->objectName} created successfully",
+                new SnippetResource($snippet),
+                200
+            );
         } catch (\Exception $e) {
 
+            $this->loggingService->failedLogger($this->objectName, 'creating', [
 
-            Log::channel('userapi')->info('error occurred while saving user snippet ', [
-
-                'user_id' => Auth::id(),
-                'exception_details' => $e->getMessage(),
+                'exception_details'  => $e->getMessage(),
             ]);
 
-            return response()->json([
+            return $this->responseHandelerService->failedResponse(
 
-                'success' => false,
-                'message' => 'error occurred while saving user snippet',
-                'data' => [],
-            ], 500);
-        }    }
-
+                "Error occurred while saving {$this->objectName}",
+                [],
+                500
+            );
+        }
+    }
 
     public function show(WritingSnippet $snippet)
     {
@@ -78,108 +77,84 @@ class SnippetController extends Controller
         Gate::authorize('view', $snippet);
 
 
-        return response()->json([
+        return $this->responseHandelerService->successResponse(
 
-            'success' => true,
-            'message' => 'user snippet retrieved successfully',
-            'data' => new SnippetResource($snippet),
-        ],200);
+            "{$this->objectName} retrieved successfully",
+            new SnippetResource($snippet),
+            200
 
+        );
     }
-
 
     public function update(SnippetRequest $request, WritingSnippet $snippet)
     {
-        
-        Gate::authorize('update',$snippet);
+
+        Gate::authorize('update', $snippet);
         try {
 
-            $snippet->fill($request->only(['content']));
+            $this->userSnippetService->updateUserSnippet($snippet, $request->content);
 
-            if ($snippet->isDirty('content')) {
+            $this->loggingService->successLogger($this->objectName, 'updated', [
 
-                $snippet->save();
-            }
-
-
-            Log::channel('userapi')->info('user snippet updated successfully', [
-
-                'user_id' => $snippet->user_id,
-                'user_ip' => $request->ip(),
                 'snippet_id' => $snippet->id,
-
             ]);
 
-            return response()->json([
+            return $this->responseHandelerService->successResponse(
 
-                'success' => true,
-                'message' => 'user snippet updated successfully',
-                'data' => new SnippetResource($snippet),
-            ], 200);
+                "{$this->objectName} updated successfully",
+                new SnippetResource($snippet),
+                200
+            );
+
         } catch (\Exception $e) {
 
+            $this->loggingService->failedLogger($this->objectName, 'updating', [
 
-            Log::channel('userapi')->info('error occurred while updating user snippet', [
-
-                'user_id' => $snippet->user_id,
-                'user_ip' => $request->ip(),
                 'snippet_id' => $snippet->id,
                 'exception_details' => $e->getMessage(),
-
             ]);
 
-            return response()->json([
+            return $this->responseHandelerService->failedResponse(
 
-                'success' => false,
-                'message' => 'error occurred while updating user snippet',
-                'data' => [],
-            ], 500);
+                "Error occurred while updating {$this->objectName}",
+                [],
+                500
+            );
         }
-
     }
-
-
 
     public function destroy(WritingSnippet $snippet)
     {
-
 
         Gate::authorize('delete', $snippet);
 
         try {
 
-               $snippet->delete();
+            $this->loggingService->successLogger($this->objectName, 'deleted', [
 
-         Log::channel('userapi')->info('user snippet deleted successfully', [
-
-                'user_id' => $snippet->user_id,
+                'snippet_id' => $snippet->id
             ]);
 
+            return $this->responseHandelerService->successResponse(
 
-            // sending resource for frontend reference before complete removal from UI
+                "{$this->objectName} deleted successfully",
+                new SnippetResource($snippet),
+                200
+            );
 
-            return response()->json([
-
-                'success' => true,
-                'message' => 'user snippet deleted successfully',
-                'data' => new SnippetResource($snippet),
-            ], 200);
         } catch (\Exception $e) {
 
-            Log::channel('userapi')->error('error occurred while deleting user snippet', [
+            $this->loggingService->failedLogger($this->objectName, 'deleting', [
 
-                'user_id' => $snippet->user_id,
                 'exception_details' => $e->getMessage(),
             ]);
 
-            return response()->json([
+            return $this->responseHandelerService->failedResponse(
 
-                'success' => false,
-                'message' => 'error occurred while deleting user snippet',
-                'data' => [],
-            ],500);
+                "Error occurred while deleting {$this->objectName}",
+                [],
+                500
+            );
         }
     }
-
-    }
-
+}

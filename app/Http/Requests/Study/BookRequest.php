@@ -24,7 +24,7 @@ class BookRequest extends FormRequest
         return [
 
 'title' => ['required','min:6','max:40','string'],
-'book' => ['required','max:50600','mimes:pdf'],  
+'book' => ['required','max:50600','file','mimes:pdf'],  
 
         ];
     }

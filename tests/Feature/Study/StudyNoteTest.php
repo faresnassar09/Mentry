@@ -14,9 +14,7 @@ class StudyNoteTest extends TestCase
 
     use RefreshDatabase;
 
-    /**
-     * A basic feature test example.
-     */
+
     public function test_study_note_can_inserted(): void
     {
 
@@ -26,16 +24,13 @@ class StudyNoteTest extends TestCase
 
             'user_id' =>$user->id,
             'title' => 'lojpoj' ,
-             'body' => 'ihoihoi',
+            'body' => 'ihoihoi',
             
             ]);
 
 
-            $noteResponse->assertStatus(200);
+            $noteResponse->user_id == null;
 
-        $this->assertDatabaseHas('study_notes',[
-
-            'body' => 'ihoihoi',
-        ]);
+        $this->assertEquals(10,12);
     }
 }

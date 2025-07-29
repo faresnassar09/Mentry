@@ -7,39 +7,46 @@ use App\Http\Requests\Writing\BookRequest;
 use App\Http\Resources\Writing\BookResource;
 use App\Http\Resources\Writing\DetailedBookResource;
 use App\Models\Writing\WritingBook;
+use App\Service\Api\Logging\LoggingService;
+use App\Service\Api\ResponseHandelerService;
 use App\Service\FileServices;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
+use App\Service\Api\Writing\BookService as UserBookService;
 
 class BookController extends Controller
 {
 
-    public function __construct(public FileServices $fileServices) {}
+    public $objectName = 'User book';
+    public function __construct(
+
+        public FileServices $fileServices,
+        public UserBookService $userBookService,
+        public ResponseHandelerService $responseHandelerService,
+        public LoggingService $loggingService,
+    ) {}
 
 
     public function index()
     {
 
+        $books = $this->userBookService->getUserBooks();
 
-        $books = Auth::user()->userBooks;
+        return $this->responseHandelerService->successResponse(
 
-        return response()->json([
-
-            'success' => true,
-            'message' => 'books retrieved successfully',
-            'data' => BookResource::collection($books),
-        ], 200);
+            "{$this->objectName}s retrieved successfully",
+            BookResource::collection($books),
+            200
+        );
     }
-
-
 
     public function store(BookRequest $request)
     {
 
         try {
 
-            $book = $this->fileServices->storeGeneratedFile(
+            $file = $this->fileServices->storeGeneratedFile(
 
                 'users_books',
                 $request->title,
@@ -47,57 +54,45 @@ class BookController extends Controller
 
             );
 
-            if (!$book['status'] || !$book['path']) {
+            if (!$file['status'] || !$file['path']) {
 
+                $this->loggingService->failedLogger($this->objectName, 'creating', []);
 
-                Log::channel('userapi')->error('error occurred while saving user book in system storage', [
+                return $this->responseHandelerService->failedResponse(
 
-                    'user_id' => Auth::id(),
-                ]);
-
-                return response()->json([
-
-                    'success' => false,
-                    'message' => 'error occurred while saving user book in system storage',
-                    'data' => [],
-
-                ], 500);
+                    "Unexpected error occurred while saving {$this->objectName} in system storage",
+                    [],
+                    500
+                );
             }
 
-            $book =  Auth::user()->userBooks()->create([
+            $book =  $this->userBookService->createUserBook($request->title, $file['path']);
 
-                'title' => $request->title,
-                'path' => $book['path'],
-            ]);
+            $this->loggingService->successLogger($this->objectName, 'created', [
 
-            Log::channel('userapi')->info('user book created successfully', [
-
-                'user_id' => $book->user_id,
                 'book_id' => $book->id,
             ]);
 
-            return response()->json([
 
-                'success' => true,
-                'message' => 'user book created successfully',
-                'data' => new BookResource($book),
-            ], 201);
+            return $this->responseHandelerService->successResponse(
+
+                "$this->objectName created successfully",
+                new BookResource($book),
+                200
+            );
         } catch (\Exception $e) {
 
+            $this->loggingService->failedLogger($this->objectName, 'creating', [
 
-            Log::channel('userapi')->error('error occurred while saving user book', [
-
-                'user_id' => Auth::id(),
                 'exception_error' => $e->getMessage(),
-
             ]);
 
-            return response()->json([
+            return $this->responseHandelerService->failedResponse(
 
-                'success' => false,
-                'message' => 'error occurred while saving user book',
-                'data' => [],
-            ], 500);
+                "Unexpected error occurred while saving {$this->objectName}",
+                [],
+                500
+            );
         }
     }
 
@@ -107,17 +102,15 @@ class BookController extends Controller
 
         Gate::authorize('view', $book);
 
-        return response()->json([
+        return $this->responseHandelerService->successResponse(
 
-            'success' => true,
-            'message' => 'user book retrieved successfully',
-            'data' => new DetailedBookResource($book),
-        ]);
+            "$this->objectName retrieved successfully",
+            new DetailedBookResource($book),
+            200
+        );
     }
 
-
-
-    public function update(WritingBook $request, WritingBook $book)
+    public function update(BookRequest $request, WritingBook $book)
     {
 
         Gate::authorize('update', $book);
@@ -128,61 +121,43 @@ class BookController extends Controller
 
             if (!$status) {
 
-                Log::channel('userapi')->error('error occurred while updating user book in system storage', [
+                $this->loggingService->successLogger($this->objectName, 'updating', []);
 
-                    'user_id' => $book->user_id,
-                ]);
+                return $this->responseHandelerService->failedResponse(
 
-                return response()->json([
-
-                    'success' => false,
-                    'message' => 'error occurred while updating user book',
-                    'data' => [],
-
-                ]);
+                    "Unexpected error occurred while updating {$this->objectName}",
+                    [],
+                    500
+                );
             }
 
+            $this->userBookService->updateUserBook($book, $request->title);
 
-            $book->fill($request->only(['title',]));
+            $this->loggingService->successLogger($this->objectName, 'updated', [
 
-            if ($book->isDirty('title')) {
-
-                $book->save();
-            }
-
-
-            Log::channel('userapi')->info('user book updated successfully', [
-
-                'user_id' => $book->user_id,
-                'user_ip' => $request->ip(),
                 'book_id' => $book->id,
-
             ]);
 
-            return response()->json([
+            return $this->responseHandelerService->successResponse(
 
-                'success' => true,
-                'message' => 'user book updated successfully',
-                'data' => new BookResource($book),
-            ], 200);
+                "{$this->objectName} updated successfully",
+                new BookResource($book),
+                200
+            );
         } catch (\Exception $e) {
 
+            $this->loggingService->failedLogger($this->objectName, 'updating', [
 
-            Log::channel('userapi')->info('error occurred while updating user book', [
-
-                'user_id' => $book->user_id,
-                'user_ip' => $request->ip(),
                 'book_id' => $book->id,
                 'exception_details' => $e->getMessage(),
-
             ]);
 
-            return response()->json([
+            return $this->responseHandelerService->failedResponse(
 
-                'success' => false,
-                'message' => 'error occurred while updating user book',
-                'data' => [],
-            ], 500);
+                "Unexpected Error occurred while updating $this->objectName",
+                [],
+                500
+            );
         }
     }
 
@@ -198,51 +173,40 @@ class BookController extends Controller
 
             if (!$status) {
 
-                Log::channel('userapi')->error('error occurred while deleting user book from system storage', [
+                $this->loggingService->failedLogger($this->objectName, 'deleting', []);
 
-                    'user_id' => $book->user_id,
-                    'book_id' => $book->id,
-                ]);
+                return $this->responseHandelerService->successResponse(
 
-                return response()->json([
-
-                    'success' => false,
-                    'message' => 'error occurred while deleting user book from system storage',
-                    'data' => [],
-                ], 500);
+                    "Unexpcted Error occurred while deleting {$this->objectName} from system storage",
+                    [],
+                    500
+                );
             }
 
-            Log::channel('userapi')->info('user book deleted successfully', [
+            $this->loggingService->successLogger($this->objectName, 'deleted', []);
 
-                'user_id' => $book->user_id,
-                'book_id' => $book->id,
-            ]);
+            $this->userBookService->deleteUserBook($book);
 
-            $book->delete();
+            return $this->responseHandelerService->successResponse(
 
-            // sending resource for frontend reference before complete removal from UI
-
-            return response()->json([
-
-                'success' => true,
-                'message' => 'user book deleted successfully',
-                'data' => new BookResource($book),
-            ], 200);
+                "{$this->objectName} deleted successfully",
+                new BookResource($book),
+                200
+            );
         } catch (\Exception $e) {
 
-            Log::channel('userapi')->error('error occurred while deleting user book', [
+            $this->loggingService->failedLogger($this->objectName, 'deleting', [
 
-                'user_id' => $book->user_id,
                 'book_title' => $book->title,
                 'exception_details' => $e->getMessage(),
             ]);
 
-            return response()->json([
+            return $this->responseHandelerService->failedResponse(
 
-                'success' => false,
-                'message' => 'error occurred while deleting user book',
-                'data' => [],
-            ]);
+                "Unexpected error occurred while deleting $this->objectName",
+                [],
+                500
+            );
         }
     }
 
@@ -251,16 +215,12 @@ class BookController extends Controller
     {
 
         Gate::authorize('download', $book);
-  
-        Log::channel('userapi')->info('user book downloaded successfully',[
 
-            'user_id' => $book->user_id,
-            'user_ip' => request()->ip(),
-            'book_id' => $book->id,  
+        $this->loggingService->successLogger($this->objectName, 'downloaded', [
 
+            'book_id' => $book->id,
         ]);
 
-        return $this->fileServices->generatePdfFile($book->path,$book->title);
+        return $this->fileServices->generatePdfFile($book->path, $book->title);
     }
 }
-

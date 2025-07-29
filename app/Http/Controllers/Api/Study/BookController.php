@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers\Api\Study;
 
-use App\Filament\Resources\BookResource as ResourcesBookResource;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Study\BookRequest;
 use App\Http\Resources\Study\BookResource;
 use App\Models\Study\StudyBook;
+use App\Service\Api\Logging\LoggingService;
+use App\Service\Api\ResponseHandelerService;
+use App\Service\Api\Study\BookService as StudyBookService;
 use App\Service\FileServices;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -16,40 +18,25 @@ use Illuminate\Support\Facades\Log;
 class BookController extends Controller
 {
 
-    public function __construct(public FileServices $fileServices) {}
+    public $objectName = 'Study book';
+    public function __construct(
+
+        public FileServices $fileServices,
+        public StudyBookService $studyBookService,
+        public ResponseHandelerService $responseHandelerService,
+        public LoggingService $loggingService,
+    ) {}
 
     public function index()
     {
 
-        try {
+        $books = $this->studyBookService->getUserStudyBooks();
 
-            $books = Auth::user()->studyBooks;
-
-            return response()->json(
-                [
-                    'success' => true,
-                    'message' => 'Study books retrieved successfully',
-                    'data' => BookResource::collection($books),
-                ],
-                200
-            );
-        } catch (\Exception $e) {
-
-
-            Log::channel('userapi')->error('An error occurred while retrieving study books', [
-
-                'user_id' => Auth::id(),
-                'user_ip' => request()?->ip(),
-                'exception_details' => $e->getMessage(),
-
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'An error occurred while retrieving study books',
-                'data' => [],
-            ], 500);
-        }
+        return $this->responseHandelerService->successResponse(
+            'Study books retrieved successfully',
+            BookResource::collection($books),
+            200
+        );
     }
 
     public function store(BookRequest $request)
@@ -61,74 +48,54 @@ class BookController extends Controller
 
             if (!$path) {
 
-                Log::channel('userapi')->error('An error occurred while saving study book file on storage', [
 
-                    'user_id' => Auth::id(),
-                ]);
+                $this->loggingService->failedLogger($this->objectName, 'uploading', []);
 
-                return response()->json([
-
-                    'success' => false,
-                    'message' => 'An error occurred while saving study book file on storage',
-                    'data' => [],
-
-                ], 500);
+                return $this->responseHandelerService->failedResponse(
+                    'Unexpected error occurred while storing study book',
+                    [],
+                    500
+                );
             }
 
-            $book = Auth::user()->studyBooks()->create([
+            $book = $this->studyBookService->createStudyBook($request->title, $path);
 
-                'title' => $request->title,
-                'path' => $path,
+            $this->loggingService->successLogger($this->objectName, 'created', [
+
+                'book_id' => $book?->id,
             ]);
 
-            Log::channel('userapi')->info('study book created successfully', [
-
-                'user_id' => $book->user_id,
-                'book_id' => $book->id,
-            ]);
-
-            return response()->json([
-
-                'success' => true,
-                'message' => 'study book created successfully',
-                'data' => new BookResource($book),
-
-            ], 200);
+            return $this->responseHandelerService->successResponse(
+                'Study book created successfully',
+                new BookResource($book),
+                201
+            );
         } catch (\Exception $e) {
 
-            Log::channel('userapi')->error('error occurred while saving study book', [
 
-                'user_id' => Auth::id(),
+            $this->loggingService->failedLogger($this->objectName, 'uploading', [
                 'exception_details' => $e->getMessage(),
-                'user_ip' => request()?->ip(),
-
             ]);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'error occurred while saving study book'
-            ], 422);
+            return $this->responseHandelerService->failedResponse(
+                'Unexpected error occurred while storing study book',
+                [],
+                500
+            );
         }
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(StudyBook $book)
     {
 
         Gate::authorize('view', $book);
 
-
-        return response()->json([
-
-            'success' => true,
-            'message' => 'retrieved study book successfully',
-            'data' => new BookResource($book),
-        ]);
+        return $this->responseHandelerService->successResponse(
+            'Study book retrieved  successfully',
+            new BookResource($book),
+            200
+        );
     }
-
-
     public function download(StudyBook $book)
     {
 
@@ -138,31 +105,24 @@ class BookController extends Controller
 
         try {
 
-            Log::channel('userapi')->info('study book donwloaded successfully', [
-
-                'user_id' => $book->user_id,
+            $this->loggingService->successLogger($this->objectName, 'downloaded', [
                 'book_id' => $book->id,
-                'user_ip' => request()?->ip(),
-
             ]);
 
             return $this->fileServices->download($book->path, $book->name);
+
         } catch (\Exception $e) {
 
-            Log::channel('userapi')->error('error occurred while downloading study book', [
-
-                'user_id' => $book->user_id,
+            $this->loggingService->failedLogger($this->objectName, 'downloading', [
                 'book_id' => $book->id,
-                'user_ip' => request()->ip(),
                 'exception_details' => $e->getMessage(),
-
             ]);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'error occurred while donwloading study book',
-                'data' => [],
-            ]);
+            return $this->responseHandelerService->failedResponse(
+                'Unexpected error occurred while downloading study book',
+                [],
+                500
+            );
         }
     }
 
@@ -178,50 +138,44 @@ class BookController extends Controller
 
             if (!$status) {
 
-                Log::channel('userapi')->error('An error occurred while deleting study book file on storage', [
+                $this->loggingService->failedLogger($this->objectName,'deleting', []);
 
-                    'user_id' => $book->user_id,
-                ]);
-
-                return response()->json([
-
-                    'success' => false,
-                    'message' => 'error occurred while deleting study book from storage',
-                    'data' => [],
-                ], 500);
+                return $this->responseHandelerService->failedResponse(
+                    'Unexpected error occurred while deleting study book from system storage',
+                    [],
+                    500
+                );
             }
 
-            $book->delete();
+            $this->studyBookService->deleteStudyBook($book);
 
-            Log::channel('userapi')->info('study book deleted successfully', [
+            $this->loggingService->successLogger($this->objectName,'deleted',[
 
-                'user_id' => $book->user_id,
-                'book_title' => $book->title,
-
+                'study_book_title' => $book->title,
             ]);
 
-            return response()->json([
 
-                'success' => true,
-                'message' => 'study book deleted successfully',
-                'data' => [],
-            ], 200);
+            return $this->responseHandelerService->successResponse(
+                'Study book deleted successfully',
+                new BookResource($book),
+                200
+            );
+
+
         } catch (\Exception $e) {
 
-            Log::channel('userapi')->info('An error occurred  while deleting study book', [
+            $this->loggingService->successLogger($this->objectName,'deleting',[
 
-                'user_id' => $book->user_id,
-                'book_title' => $book->title,
-                'exception_details' => $e->getMessage(),
+        'book_title' => $book->title,
+        'exception_details' => $e->getMessage(),
+        
+        ]);
 
-            ]);
-
-            return response()->json([
-
-                'success' => false,
-                'message' => 'An error occurred  while deleting study book',
-                'data' => [],
-            ], 500);
+        return $this->responseHandelerService->failedResponse(
+                'Unexpected error occurred while deleting study book',
+                [],
+                500
+            );
         }
     }
-}
+} 
