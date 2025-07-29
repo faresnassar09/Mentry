@@ -18,7 +18,7 @@
       <div class="hs-accordion-group pb-0 px-2   w-full flex flex-col flex-wrap" data-hs-accordion-always-open>
         <ul class="space-y-1">
           <li>
-            <a class="flex items-center gap-x-3.5 py-2 px-2.5 bg-gray-100 text-sm text-gray-800 rounded-lg hover:bg-gray-100 focus:outline-hidden focus:bg-gray-100 dark:bg-neutral-700 dark:hover:bg-neutral-700 dark:focus:bg-neutral-700 dark:text-white" href="#">
+            <a href="{{route('dashboard')}}" class="flex items-center gap-x-3.5 py-2 px-2.5 bg-gray-100 text-sm text-gray-800 rounded-lg hover:bg-gray-100 focus:outline-hidden focus:bg-gray-100 dark:bg-neutral-700 dark:hover:bg-neutral-700 dark:focus:bg-neutral-700 dark:text-white" href="#">
               <svg class="size-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
               {{ __('messages.home_page') }}
             </a>
@@ -218,11 +218,40 @@
                       {{ __('messages.logout') }}
                   </button>
               </form>
+
+              
             </li>
+
+            
         </ul>
+
+        
       </div>
+      <div class="flex items-center space-x-4 rtl:space-x-reverse pt-1">
+            {{-- Language Dropdown --}}
+            <div x-data="{ open: false }" class="relative">
+                <button @click="open = !open" type="button" class="inline-flex items-center gap-x-1 text-sm font-medium text-gray-700 hover:text-blue-600 transition duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-md py-2 px-3">
+                    <span class="fi fi-{{ app()->getLocale() === 'ar' ? 'sa' : 'us' }} rounded-full mr-2"></span> {{ app()->getLocale() === 'ar' ? 'العربية' : 'English' }}
+                    <svg class="-mr-1 h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.25 4.25a.75.75 0 01-1.06 0L5.21 8.27a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+
+                <div x-show="open" @click.away="open = false" x-transition:enter="transition ease-out duration-100" x-transition:enter-start="transform opacity-0 scale-95" x-transition:enter-end="transform opacity-100 scale-100" x-transition:leave="transition ease-in duration-75" x-transition:leave-start="transform opacity-100 scale-100" x-transition:leave-end="transform opacity-0 scale-95" class="absolute z-10 mt-2 w-32 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none" role="menu" aria-orientation="vertical" aria-labelledby="menu-button" tabindex="-1">
+                    <div class="py-1" role="none">
+                        <a href="{{ route('language.switch','ar') }}" class="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100" role="menuitem" tabindex="-1" id="menu-item-0">
+                            <span class="fi fi-sa rounded-full mr-2"></span> العربية
+                        </a>
+                        <a href="{{ route('language.switch','en') }}" class="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100" role="menuitem" tabindex="-1" id="menu-item-1">
+                            <span class="fi fi-us rounded-full mr-2"></span> English
+                        </a>
+                    </div>
+                </div>
+            </div>
     </nav>
     </div>
+    
+
 </div>
 
 <script>
@@ -261,3 +290,5 @@
 </script>
 
 <script src="https://unpkg.com/preline@latest/dist/preline.js"></script>
+
+

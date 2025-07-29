@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Route;
 // Route::get('test',[\App\Http\Controllers\Algoritms::class,'get']);
 
 
-Route::get('lang/change/{lang}',function (string $lang) {
+Route::get('language/switch/{lang}',function (string $lang) {
    
 if (!in_array($lang,['ar','en'])) {
 
@@ -17,14 +17,11 @@ if (!in_array($lang,['ar','en'])) {
 
 }
 
-// App::setLocale($lang);
-
-return response('Lang set')->cookie(Cookie::forever('lang', $lang));
-
-// Log::channel('userapi')->info('lk',[$lang]);
+return back()->cookie(Cookie::forever('lang', $lang));
 
 
-});
+
+})->name('language.switch');
 
 Route::post('/start-timer', function (Illuminate\Http\Request $request) {
     $minutes = (int) $request->input('minutes');
