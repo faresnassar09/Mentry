@@ -1,0 +1,94 @@
+<?php
+
+namespace App\Http\Controllers\Api\Study;
+
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Study\ScheduleRequest;
+use App\Http\Resources\Study\ScheduleResource;
+use App\Service\Api\Logging\LoggingService;
+use App\Service\Api\ResponseHandelerService;
+use App\Service\Api\Study\ScheduleService as StudyScheduleService;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+
+class ScheduleController extends Controller
+{
+
+    public function __construct(
+
+        public ResponseHandelerService $responseHandelerService,
+        public StudyScheduleService $studyScheduleService,
+        public LoggingService $loggingService,
+    ) {}
+
+
+    public function index()
+    {
+
+        $schedules = $this->studyScheduleService->getUserStudySchedules();
+
+        return $this->responseHandelerService->successResponse(
+
+            'Study schedules retrieved successfully',
+            ScheduleResource::collection($schedules),
+            200
+        );
+    }
+
+
+    public function store(ScheduleRequest $request)
+    {
+
+        if (empty($request->subjects)) {
+
+            return $this->responseHandelerService->failedResponse(
+
+                'Error occurred the schedule subject is empty',
+                [],
+                500
+            );
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $schedule = $this->studyScheduleService->createStudySchedule();
+
+            $this->studyScheduleService->createScheduleItems($request, $schedule);
+
+            DB::commit();
+
+
+            $this->loggingService->successLogger('Study schedule','created',[
+
+                    'schedule_id' => $schedule->id,
+            ]);
+
+            $scheduleWithItems =  $schedule->load('items');
+
+            return $this->responseHandelerService->successResponse(
+
+                'Study schedule created successfully',
+                new ScheduleResource($scheduleWithItems),
+                200
+            );
+        } catch (\Exception $e) {
+
+            DB::rollBack();
+
+            $this->loggingService->successLogger('Study schedule','creating',[
+
+                'schedule_id' => $schedule->id,
+                'exception_details' => $e->getMessage(),
+        ]);
+        
+            return $this->responseHandelerService->failedResponse(
+
+                'Error occurred while saving study schedule',
+                [],
+                500
+            );
+        }
+    }
+}
